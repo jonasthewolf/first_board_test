@@ -23,7 +23,14 @@ lazy_static! {
   static ref MUTEX_EXTI: Mutex<RefCell<Option<stm32l4x6::EXTI>>> = Mutex::new(RefCell::new(None));
 }
 
-static DELAY: AtomicU32 = AtomicU32::new(2000000);
+#[repr(u32)]
+enum LedSpeed {
+  SLOW   = 2000000,
+  MEDIUM = 1000000,
+  FAST   =  500000
+}
+
+static DELAY: AtomicU32 = AtomicU32::new(LedSpeed::SLOW as u32);
 
 
 #[entry]
@@ -90,9 +97,9 @@ fn EXTI15_10() {
     });
     // Switch between different modes
     match DELAY.load(Ordering::Relaxed) {
-      2000000 => DELAY.store(1000000, Ordering::Relaxed),
-      1000000 => DELAY.store(500000, Ordering::Relaxed),
-      500000  => DELAY.store(2000000, Ordering::Relaxed),
+      x if x == LedSpeed::SLOW as u32 => DELAY.store(LedSpeed::MEDIUM as u32, Ordering::Relaxed),
+      x if x == LedSpeed::MEDIUM as u32 => DELAY.store(LedSpeed::FAST as u32, Ordering::Relaxed),
+      x if x == LedSpeed::FAST as u32 => DELAY.store(LedSpeed::SLOW as u32, Ordering::Relaxed),
       _ => () 
     }
 }
